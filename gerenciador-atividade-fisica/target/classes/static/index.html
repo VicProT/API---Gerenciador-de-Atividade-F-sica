@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Atividade Física</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, button { padding: 8px; width: 100%; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .nav { display: flex; margin-bottom: 20px; }
+        .nav a { padding: 10px; background: #ddd; margin-right: 5px; text-decoration: none; color: black; }
+        .nav a:hover { background: #ccc; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerenciador de Atividade Física</h1>
+        
+        <div class="nav">
+            <a href="login.html" id="loginLink">Login</a>
+            <a href="cadastro.html">Cadastre-se</a>
+            <a href="atividades.html" id="atividadesLink" class="hidden">Minhas Atividades</a>
+            <a href="#" id="logoutLink" class="hidden" onclick="logout()">Sair</a>
+        </div>
+        
+        <h2>Bem-vindo ao Gerenciador de Atividade Física</h2>
+        <p>Registre suas atividades físicas e acompanhe seu progresso!</p>
+    </div>
+    
+    <script>
+        // Verifica se o usuário está logado ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            if(localStorage.getItem('usuarioLogado')) {
+                document.getElementById('loginLink').classList.add('hidden');
+                document.getElementById('atividadesLink').classList.remove('hidden');
+                document.getElementById('logoutLink').classList.remove('hidden');
+            }
+        });
+        
+        function logout() {
+            localStorage.removeItem('usuarioLogado');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

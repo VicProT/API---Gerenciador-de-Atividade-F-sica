@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Atividades - Gerenciador de Atividade Física</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select, button { padding: 8px; width: 100%; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+        .info { color: blue; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .nav { display: flex; margin-bottom: 20px; }
+        .nav a { padding: 10px; background: #ddd; margin-right: 5px; text-decoration: none; color: black; }
+        .nav a:hover { background: #ccc; }
+        .hidden { display: none; }
+        #seriesSection .form-group { margin-bottom: 10px; }
+        #seriesSection label { font-weight: normal; font-size: 0.9em; }
+        #seriesSection input { padding: 6px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minhas Atividades</h1>
+        
+        <div class="nav">
+            <a href="#" onclick="logout()">Sair</a>
+        </div>
+        
+        <div id="message" class="error"></div>
+        
+        <h2>Nova Atividade</h2>
+        <form id="atividadeForm">
+            <div class="form-group">
+                <label for="tipo">Tipo de Atividade:</label>
+                <select id="tipo" required>
+                    <option value="">Selecione...</option>
+                    <option value="Caminhada">Caminhada</option>
+                    <option value="Corrida">Corrida</option>
+                    <option value="Musculação">Musculação</option>
+                    <option value="Natação">Natação</option>
+                    <option value="Ciclismo">Ciclismo</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="dataHora">Data e Hora:</label>
+                <input type="datetime-local" id="dataHora" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="duracao">Duração (minutos):</label>
+                <input type="number" id="duracao" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="calorias">Calorias Queimadas:</label>
+                <input type="number" id="calorias" required>
+            </div>
+            
+            <button type="submit">Registrar Atividade</button>
+        </form>
+        
+        <h2>Minhas Atividades Registradas</h2>
+        <table id="atividadesTable">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Data/Hora</th>
+                    <th>Duração (min)</th>
+                    <th>Calorias</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        
+        <div id="seriesSection" class="hidden">
+            <h3>Séries da Atividade</h3>
+            <form id="serieForm">
+                <input type="hidden" id="atividadeId">
+                
+                <div class="form-group">
+                    <label for="exercicio">Exercício:</label>
+                    <input type="text" id="exercicio" required>
+                </div>
+                
+                <div class="form-group" id="repeticoesGroup">
+                    <label for="repeticoes">Repetições:</label>
+                    <input type="number" id="repeticoes">
+                </div>
+                
+                <div class="form-group" id="pesoGroup">
+                    <label for="peso">Peso (kg):</label>
+                    <input type="number" step="0.1" id="peso">
+                </div>
+                
+                <div class="form-group">
+                    <label for="observacoes">Observações:</label>
+                    <input type="text" id="observacoes">
+                </div>
+                
+                <button type="submit">Adicionar Série</button>
+            </form>
+            
+            <table id="seriesTable">
+                <thead>
+                    <tr>
+                        <th>Exercício</th>
+                        <th>Repetições</th>
+                        <th>Peso</th>
+                        <th>Observações</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let usuarioId = null;
+        let atividades = [];
+        let atividadeAtual = null;
+        
+        // Verifica se o usuário está logado
+        document.addEventListener('DOMContentLoaded', function() {
+            const usuarioLogado = localStorage.getItem('usuarioLogado');
+            
+            if(!usuarioLogado) {
+                window.location.href = 'login.html';
+            } else {
+                try {
+                    const usuario = JSON.parse(usuarioLogado);
+                    usuarioId = usuario.id;
+                    console.log('ID do usuário logado:', usuarioId);
+                    carregarAtividades();
+                    
+                    // Configura a visibilidade dos campos de série
+                    document.getElementById('tipo').addEventListener('change', function() {
+                        const isMusculacao = this.value === 'Musculação';
+                        document.getElementById('repeticoesGroup').style.display = 
+                            isMusculacao ? 'block' : 'none';
+                        document.getElementById('pesoGroup').style.display = 
+                            isMusculacao ? 'block' : 'none';
+                    });
+                } catch (error) {
+                    console.error('Erro ao processar dados do usuário:', error);
+                    document.getElementById('message').className = 'error';
+                    document.getElementById('message').textContent = 'Erro ao carregar dados do usuário. Faça login novamente.';
+                    setTimeout(() => window.location.href = 'login.html', 2000);
+                }
+            }
+        });
+        
+        function carregarAtividades() {
+            fetch(`http://localhost:8080/api/atividades/usuario/${usuarioId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.length > 0) {
+                        atividades = data;
+                        atualizarTabelaAtividades();
+                    } else {
+                        document.getElementById('message').className = 'info';
+                        document.getElementById('message').textContent = 'Nenhuma atividade encontrada. Cadastre sua primeira atividade!';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar atividades:', error);
+                    document.getElementById('message').className = 'error';
+                    document.getElementById('message').textContent = 'Erro ao carregar atividades. Tente novamente mais tarde.';
+                });
+        }
+        
+        function atualizarTabelaAtividades() {
+            const tbody = document.querySelector('#atividadesTable tbody');
+            tbody.innerHTML = '';
+            
+            atividades.forEach(atividade => {
+                const tr = document.createElement('tr');
+                const dataHora = new Date(atividade.dataHora).toLocaleString();
+                
+                tr.innerHTML = `
+                    <td>${atividade.tipo}</td>
+                    <td>${dataHora}</td>
+                    <td>${atividade.duracaoMinutos}</td>
+                    <td>${atividade.caloriasQueimadas}</td>
+                    <td>
+                        <button onclick="verSeries(${atividade.id})">Ver Séries</button>
+                        <button onclick="deletarAtividade(${atividade.id})">Excluir</button>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function verSeries(atividadeId) {
+            atividadeAtual = atividades.find(a => a.id === atividadeId);
+            document.getElementById('seriesSection').classList.remove('hidden');
+            document.getElementById('atividadeId').value = atividadeId;
+            
+            // Mostra/oculta campos conforme o tipo de atividade
+            const isMusculacao = atividadeAtual.tipo === 'Musculação';
+            document.getElementById('repeticoesGroup').style.display = isMusculacao ? 'block' : 'none';
+            document.getElementById('pesoGroup').style.display = isMusculacao ? 'block' : 'none';
+            
+            fetch(`http://localhost:8080/api/series/atividade/${atividadeId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Erro ao carregar séries');
+                    return response.json();
+                })
+                .then(data => atualizarTabelaSeries(data))
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('message').className = 'error';
+                    document.getElementById('message').textContent = 'Erro ao carregar séries!';
+                });
+        }
+        
+		function atualizarTabelaSeries(series) {
+		    const tbody = document.querySelector('#seriesTable tbody');
+		    tbody.innerHTML = '';
+		    
+		    if (series && series.length > 0) {
+		        series.forEach(serie => {
+		            const tr = document.createElement('tr');
+		            tr.innerHTML = `
+		                <td>${serie.exercicio}</td>
+		                <td>${serie.repeticoes || '-'}</td>
+		                <td>${serie.peso ? serie.peso + ' kg' : '-'}</td>
+		                <td>${serie.observacoes || '-'}</td>
+		                <td>
+		                    <button class="action-btn delete" onclick="deletarSerie(${serie.id})">Excluir</button>
+		                </td>
+		            `;
+		            tbody.appendChild(tr);
+		        });
+		    } else {
+		        const tr = document.createElement('tr');
+		        tr.innerHTML = '<td colspan="5">Nenhuma série registrada</td>';
+		        tbody.appendChild(tr);
+		    }
+		}
+        
+		function deletarAtividade(id) {
+		    if(confirm('Tem certeza que deseja excluir esta atividade e todas as suas séries?')) {
+		        fetch(`http://localhost:8080/api/atividades/${id}`, {
+		            method: 'DELETE'
+		        })
+		        .then(response => {
+		            if (!response.ok) {
+		                throw new Error('Erro ao excluir atividade');
+		            }
+		            // Remove a atividade da lista local
+		            atividades = atividades.filter(atividade => atividade.id !== id);
+		            
+		            // Atualiza a tabela
+		            atualizarTabelaAtividades();
+		            
+		            // Esconde a seção de séries se estiver mostrando a atividade excluída
+		            const atividadeId = document.getElementById('atividadeId').value;
+		            if (atividadeId && parseInt(atividadeId) === id) {
+		                document.getElementById('seriesSection').classList.add('hidden');
+		            }
+		            
+		            showMessage('success', 'Atividade excluída com sucesso!');
+		        })
+		        .catch(error => {
+		            console.error('Error:', error);
+		            showMessage('error', 'Erro ao excluir atividade!');
+		            // Tenta atualizar a lista mesmo em caso de erro
+		            carregarAtividades();
+		        });
+		    }
+		}
+        
+		function deletarSerie(id) {
+		    if(confirm('Tem certeza que deseja excluir esta série?')) {
+		        const atividadeId = document.getElementById('atividadeId').value;
+		        
+		        fetch(`http://localhost:8080/api/series/${id}`, {
+		            method: 'DELETE'
+		        })
+		        .then(response => {
+		            if (!response.ok) {
+		                return response.text().then(text => { throw new Error(text) });
+		            }
+		            return response;
+		        })
+		        .then(() => {
+		            // Atualiza a lista de séries imediatamente
+		            return fetch(`http://localhost:8080/api/series/atividade/${atividadeId}`);
+		        })
+		        .then(response => {
+		            if (!response.ok) throw new Error('Erro ao carregar séries');
+		            return response.json();
+		        })
+		        .then(seriesAtualizadas => {
+		            // Atualiza a tabela com as séries atualizadas
+		            atualizarTabelaSeries(seriesAtualizadas);
+		            showMessage('success', 'Série excluída com sucesso!');
+		        })
+		        .catch(error => {
+		            console.error('Error:', error);
+		            showMessage('error', 'Erro ao excluir série!');
+		            // Tenta recarregar as séries mesmo em caso de erro
+		            verSeries(atividadeId);
+		        });
+		    }
+		}
+        
+        document.getElementById('atividadeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const atividade = {
+                tipo: document.getElementById('tipo').value,
+                dataHora: document.getElementById('dataHora').value,
+                duracaoMinutos: parseInt(document.getElementById('duracao').value),
+                caloriasQueimadas: parseInt(document.getElementById('calorias').value),
+                usuarioId: usuarioId
+            };
+            
+            fetch('http://localhost:8080/api/atividades', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(atividade)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao registrar atividade');
+                return response.json();
+            })
+            .then(data => {
+                atividades.push(data);
+                atualizarTabelaAtividades();
+                document.getElementById('atividadeForm').reset();
+                document.getElementById('message').className = 'success';
+                document.getElementById('message').textContent = 'Atividade registrada com sucesso!';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('message').className = 'error';
+                document.getElementById('message').textContent = error.message || 'Erro ao registrar atividade!';
+            });
+        });
+        
+        document.getElementById('serieForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const atividadeId = parseInt(document.getElementById('atividadeId').value);
+            const isMusculacao = atividadeAtual && atividadeAtual.tipo === 'Musculação';
+            
+            const serie = {
+                exercicio: document.getElementById('exercicio').value,
+                repeticoes: isMusculacao ? parseInt(document.getElementById('repeticoes').value) || null : null,
+                peso: isMusculacao ? parseFloat(document.getElementById('peso').value) || null : null,
+                observacoes: document.getElementById('observacoes').value || null,
+                atividadeId: atividadeId
+            };
+            
+            fetch('http://localhost:8080/api/series', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serie)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao adicionar série');
+                return response.json();
+            })
+            .then(data => {
+                verSeries(atividadeId);
+                document.getElementById('serieForm').reset();
+                document.getElementById('message').className = 'success';
+                document.getElementById('message').textContent = 'Série adicionada com sucesso!';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('message').className = 'error';
+                document.getElementById('message').textContent = error.message || 'Erro ao adicionar série!';
+            });
+        });
+        
+        function logout() {
+            localStorage.removeItem('usuarioLogado');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

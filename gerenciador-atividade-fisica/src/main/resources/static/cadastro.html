@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Gerenciador de Atividade Física</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 400px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, button { padding: 8px; width: 100%; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cadastro de Usuário</h1>
+        
+        <div id="message" class="error"></div>
+        
+        <form id="cadastroForm">
+            <div class="form-group">
+                <label for="nome">Nome:</label>
+                <input type="text" id="nome" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="idade">Idade:</label>
+                <input type="number" id="idade">
+            </div>
+            
+            <div class="form-group">
+                <label for="peso">Peso (kg):</label>
+                <input type="number" step="0.1" id="peso">
+            </div>
+            
+            <div class="form-group">
+                <label for="altura">Altura (m):</label>
+                <input type="number" step="0.01" id="altura">
+            </div>
+            
+            <button type="submit">Cadastrar</button>
+        </form>
+        
+        <p>Já tem uma conta? <a href="login.html">Faça login</a></p>
+    </div>
+    
+    <script>
+        document.getElementById('cadastroForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const usuario = {
+                nome: document.getElementById('nome').value,
+                email: document.getElementById('email').value,
+                senha: document.getElementById('senha').value,
+                idade: parseInt(document.getElementById('idade').value) || 0,
+                peso: parseFloat(document.getElementById('peso').value) || 0,
+                altura: parseFloat(document.getElementById('altura').value) || 0
+            };
+            
+            fetch('http://localhost:8080/api/usuarios/cadastrar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(usuario)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('message').className = 'success';
+                document.getElementById('message').textContent = 'Cadastro realizado com sucesso!';
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('message').className = 'error';
+                document.getElementById('message').textContent = 'Erro ao realizar cadastro!';
+            });
+        });
+		
+		// Verifica se o usuário já está logado
+	    document.addEventListener('DOMContentLoaded', function() {
+	        if(localStorage.getItem('usuarioLogado')) {
+	            window.location.href = 'atividades.html';
+	        }
+	    });
+    </script>
+</body>
+</html>

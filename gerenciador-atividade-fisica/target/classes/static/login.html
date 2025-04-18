@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Gerenciador de Atividade Física</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 400px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, button { padding: 8px; width: 100%; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Login</h1>
+        
+        <div id="message" class="error"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" required>
+            </div>
+            
+            <button type="submit">Entrar</button>
+        </form>
+        
+        <p>Não tem uma conta? <a href="cadastro.html">Cadastre-se</a></p>
+    </div>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            
+            fetch('http://localhost:8080/api/usuarios/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, senha })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Credenciais inválidas');
+                }
+                return response.json();
+            })
+            .then(usuario => {
+                if(usuario && usuario.id) {
+                    // Armazena tanto o email quanto o ID do usuário
+                    localStorage.setItem('usuarioLogado', JSON.stringify({
+                        email: usuario.email,
+                        id: usuario.id
+                    }));
+                    
+                    document.getElementById('message').className = 'success';
+                    document.getElementById('message').textContent = 'Login realizado com sucesso!';
+                    setTimeout(() => {
+                        window.location.href = 'atividades.html';
+                    }, 1000);
+                } else {
+                    throw new Error('Usuário não encontrado');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('message').className = 'error';
+                document.getElementById('message').textContent = error.message || 'Erro ao realizar login!';
+            });
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if(localStorage.getItem('usuarioLogado')) {
+                window.location.href = 'atividades.html';
+            }
+        });
+    </script>
+</body>
+</html>
